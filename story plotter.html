@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character and Plot Creator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f1f1; /* Cream background */
+            color: #4a4a4a;
+        }
+        h2, h3 {
+            color: #f2b93d; /* Yellow for headings */
+        }
+        input, button, textarea {
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 16px;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            cursor: pointer;
+            background-color: #f2b93d; /* Yellow button */
+            color: white;
+            border: none;
+            width: auto;
+        }
+        button:hover {
+            background-color: #f1a737; /* Darker yellow on hover */
+        }
+        .remove-btn {
+            background-color: #d19f31;
+            color: white;
+            margin-left: 10px;
+        }
+        .remove-btn:hover {
+            background-color: #c78e2b; /* Darker yellow on hover */
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .generated-name {
+            margin: 10px 0;
+            font-weight: bold;
+            color: #f2b93d; /* Yellow for generated names */
+        }
+        section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 2px solid #f2b93d;
+            border-radius: 8px;
+            background-color: #fff9e1; /* Soft yellow background for sections */
+        }
+        .section-header {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .input-area {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-area input,
+        .input-area textarea {
+            margin-bottom: 15px;
+        }
+        .input-area button {
+            align-self: flex-start;
+            padding: 10px 20px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<main>
+    <section class="character-creation">
+        <div class="section-header">
+            <h2>Create a Character</h2>
+        </div>
+        <div class="input-area">
+            <button onclick="generateCharacter('girl')">Generate Girl Character Name</button>
+            <button onclick="generateCharacter('boy')">Generate Boy Character Name</button>
+            <div id="generated-character" class="generated-name"></div>
+        </div>
+
+        <div class="section-header">
+            <h3>Choose a Sidekick</h3>
+        </div>
+        <div class="input-area">
+            <input type="text" id="sidekick-type" placeholder="Enter sidekick type (e.g., Fire)">
+            <input type="text" id="sidekick-animal" placeholder="Enter sidekick animal (e.g., Bunny)">
+            <button onclick="generateSidekick()">Generate Sidekick</button>
+            <div id="generated-sidekick" class="generated-name"></div>
+            <h3>Sidekick List</h3>
+            <ul id="sidekick-list"></ul>
+        </div>
+    </section>
+
+    <section class="plotter">
+        <div class="section-header">
+            <h2>Plot Point Creator</h2>
+        </div>
+        <div class="input-area">
+            <input type="text" id="plot-title" placeholder="Enter plot point title">
+            <textarea id="plot-description" placeholder="Describe the plot point"></textarea>
+            <button onclick="addPlot()">Add Plot Point</button>
+            <h3>Existing Plot Points</h3>
+            <ul id="plot-list"></ul>
+        </div>
+    </section>
+
+    <section class="characters">
+        <div class="section-header">
+            <h2>Character List</h2>
+        </div>
+        <div class="input-area">
+            <input type="text" id="character-name" placeholder="Enter character name">
+            <button onclick="addCharacter()">Add Character</button>
+            <h3>Existing Characters</h3>
+            <ul id="character-list"></ul>
+        </div>
+    </section>
+
+    <button onclick="downloadPDF()">Download as PDF</button>
+</main>
+
+<script>
+// Character and Sidekick Names
+const girlCharacterNames = [
+    "Hazelnut", "Clover", "Linda", "Lavender", "Rose", "Clementine", "Ginger",
+    "Poppy", "Willow", "Maple", "Lily", "Olivia", "Nola", "Cinnamon", "Zara",
+    "Indigo", "Lyra", "Azura", "Zola"
+];
+
+const boyCharacterNames = [
+    "Quinn", "Arlo", "Milo", "Theo", "Finn", "Cody", "Ollie", "Taco", "Olive", "Basil"
+];
+
+// Load data from localStorage
+let sidekickList = JSON.parse(localStorage.getItem("sidekicks")) || [];
+let characterList = JSON.parse(localStorage.getItem("characters")) || [];
+let plotList = JSON.parse(localStorage.getItem("plots")) || [];
+
+// Update the displayed list for sidekicks, characters, and plots
+function updateSidekickList() {
+    const sidekickListContainer = document.getElementById('sidekick-list');
+    sidekickListContainer.innerHTML = '';
+    sidekickList.forEach((sidekick, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `${sidekick} <button class="remove-btn" onclick="removeSidekick(${index})">Remove</button>`;
+        sidekickListContainer.appendChild(li);
+    });
+}
+
+function updateCharacterList() {
+    const characterListContainer = document.getElementById('character-list');
+    characterListContainer.innerHTML = '';
+    characterList.forEach((character, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `${character} <button class="remove-btn" onclick="removeCharacter(${index})">Remove</button>`;
+        characterListContainer.appendChild(li);
+    });
+}
+
+function updatePlotList() {
+    const plotListContainer = document.getElementById('plot-list');
+    plotListContainer.innerHTML = '';
+    plotList.forEach((plot, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${plot.title}:</strong> ${plot.description} <button class="remove-btn" onclick="removePlot(${index})">Remove</button>`;
+        plotListContainer.appendChild(li);
+    });
+}
+
+// Save data to localStorage
+function saveData() {
+    localStorage.setItem("sidekicks", JSON.stringify(sidekickList));
+    localStorage.setItem("characters", JSON.stringify(characterList));
+    localStorage.setItem("plots", JSON.stringify(plotList));
+}
+
+// Character generation
+function generateCharacter(gender) {
+    const characterNames = gender === 'girl' ? girlCharacterNames : boyCharacterNames;
+    const randomIndex = Math.floor(Math.random() * characterNames.length);
+    const characterName = characterNames[randomIndex];
+    document.getElementById('generated-character').textContent = "Character: " + characterName;
+}
+
+// Sidekick generation
+function generateSidekick() {
+    const sidekickType = document.getElementById('sidekick-type').value;
+    const sidekickAnimal = document.getElementById('sidekick-animal').value;
+    const sidekickName = `${sidekickType} ${sidekickAnimal}`;
+
+    if (sidekickType && sidekickAnimal) {
+        sidekickList.push(sidekickName);
+        saveData();
+        updateSidekickList();
+        document.getElementById('generated-sidekick').textContent = "Sidekick: " + sidekickName;
+    } else {
+        document.getElementById('generated-sidekick').textContent = "Please enter both sidekick type and animal!";
+    }
+}
+
+// Plot management
+function addPlot() {
+    const plotTitle = document.getElementById('plot-title').value;
+    const plotDescription = document.getElementById('plot-description').value;
+
+    if (plotTitle && plotDescription) {
+        plotList.push({ title: plotTitle, description: plotDescription });
+        saveData();
+        updatePlotList();
+        document.getElementById('plot-title').value = '';
+        document.getElementById('plot-description').value = '';
+    }
+}
+
+function removePlot(index) {
+    plotList.splice(index, 1);
+    saveData();
+    updatePlotList();
+}
+
+// Character management
+function addCharacter() {
+    const characterName = document.getElementById('character-name').value;
+    if (characterName) {
+        characterList.push(characterName);
+        saveData();
+        updateCharacterList();
+        document.getElementById('character-name').value = '';
+    }
+}
+
+function removeCharacter(index) {
+    characterList.splice(index, 1);
+    saveData();
+    updateCharacterList();
+}
+
+// Download PDF with yellow theme
+function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Title with yellow background and black text
+    doc.setFillColor(255, 204, 0); // Yellow
+    doc.rect(0, 0, 210, 20, 'F'); // Background for title
+    doc.setTextColor(0, 0, 0); // Black text
+    doc.setFontSize(18);
+    doc.text("Character and Plot Creator", 15, 15);
+
+    // Characters section
+    doc.setFontSize(14);
+    doc.setFillColor(255, 204, 0); // Yellow header
+    doc.rect(10, 30, 190, 10, 'F');
+    doc.setTextColor(0, 0, 0); // Black text
+    doc.text("Character List", 15, 35);
+
+    characterList.forEach((character, index) => {
+        doc.text(`${index + 1}. ${character}`, 15, 45 + (index * 10));
+    });
+
+    // Sidekicks section
+    doc.setFontSize(14);
+    doc.setFillColor(255, 204, 0); // Yellow header
+    doc.rect(10, 60 + (characterList.length * 10), 190, 10, 'F');
+    doc.setTextColor(0, 0, 0); // Black text
+    doc.text("Sidekick List", 15, 65 + (characterList.length * 10));
+
+    sidekickList.forEach((sidekick, index) => {
+        doc.text(`${index + 1}. ${sidekick}`, 15, 75 + (index * 10) + (characterList.length * 10));
+    });
+
+    // Plots section
+    doc.setFontSize(14);
+    doc.setFillColor(255, 204, 0); // Yellow header
+    doc.rect(10, 90 + ((characterList.length + sidekickList.length) * 10), 190, 10, 'F');
+    doc.setTextColor(0, 0, 0); // Black text
+    doc.text("Plot Points", 15, 95 + ((characterList.length + sidekickList.length) * 10));
+
+    plotList.forEach((plot, index) => {
+        doc.text(`${index + 1}. ${plot.title}: ${plot.description}`, 15, 105 + (index * 10) + ((characterList.length + sidekickList.length) * 10));
+    });
+
+    doc.save("Character_Plot_Creator_Yellow.pdf");
+}
+
+updateSidekickList();
+updateCharacterList();
+updatePlotList();
+</script>
+
+</body>
+</html>
